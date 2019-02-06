@@ -1,39 +1,47 @@
-FROM php:7.1-fpm
-ARG TIMEZONE
+FROM alpine:3.8
 
 MAINTAINER Vlad Umanskyi <vladumanskyi@gmail.com>
 
-RUN apt-get update && apt-get install -y \
-    openssl \
-    git \
-    unzip
+RUN apk add --update \
+    php7-fpm \
+    php7-apcu \
+    php7-ctype \
+    php7-curl \
+    php7-dom \
+    php7-gd \
+    php7-iconv \
+    php7-imagick \
+    php7-json \
+    php7-intl \
+    php7-mcrypt \
+    php7-fileinfo\
+    php7-mbstring \
+    php7-opcache \
+    php7-openssl \
+    php7-pdo \
+    php7-pdo_mysql \
+    php7-mysqli \
+    php7-xml \
+    php7-zlib \
+    php7-phar \
+    php7-tokenizer \
+    php7-session \
+    php7-simplexml \
+    php7-xdebug \
+    php7-zip \
+    make \
+    curl
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-&& composer --version
+RUN rm -rf /var/cache/apk/* && rm -rf /tmp/* && \
+    curl --insecure https://getcomposer.org/composer.phar -o /usr/bin/composer && chmod +x /usr/bin/composer
 
-# Set timezone
-RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} > /etc/timezone \
-&& printf '[PHP]\ndate.timezone = "%s"\n', ${TIMEZONE} > /usr/local/etc/php/conf.d/tzone.ini \
-&& "date"
+ADD symfony.ini /etc/php7/conf.d/
+ADD symfony.ini /etc/php7/cli/conf.d/
+ADD xdebug.ini  /etc/php7/conf.d/
 
-# Type docker-php-ext-install to see available extensions
-RUN docker-php-ext-install pdo pdo_mysql
+ADD symfony.pool.conf /etc/php7/php-fpm.d/
 
+CMD ["php-fpm7", "-F"]
 
-# install xdebug
-RUN pecl install xdebug \
-&& docker-php-ext-enable xdebug \
-&& echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "xdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "xdebug.idekey=\"PHPSTORM\"" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-&& echo "xdebug.remote_port=9001" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-
-
-RUN echo 'alias sf="php app/console"' >> ~/.bashrc \
-&& echo 'alias sf3="php bin/console"' >> ~/.bashrc
-
-WORKDIR /var/www/website
+WORKDIR /var/www/symfony
+EXPOSE 9001
